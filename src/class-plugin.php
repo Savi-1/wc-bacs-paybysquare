@@ -481,6 +481,32 @@ class Plugin {
 			'beneficiary_name' => $beneficiary_name,
 			'bank_accounts'    => $bank_accounts,
 		];
+
+		/**
+		 * Filter the variable symbol used in the QR code.
+		 *
+		 * Use this to replace the default (order number, digits-only, max 10
+		 * chars) with e.g. a proforma-invoice number from an integrated
+		 * invoicing plugin so bank transfers reconcile against invoices.
+		 *
+		 * @param string    $variable_symbol Default VS derived from the order number.
+		 * @param \WC_Order $order           The order the QR code is for.
+		 */
+		$qrdata['variable_symbol'] = (string) apply_filters( 'pay_by_square_qr_variable_symbol', $qrdata['variable_symbol'], $order );
+
+		/**
+		 * Filter the full QR data array before XML generation.
+		 *
+		 * Covers every field (total, currency, variable_symbol, payment_note,
+		 * beneficiary_name, bank_accounts). Runs after
+		 * `pay_by_square_qr_variable_symbol` so the narrow filter's result is
+		 * visible here.
+		 *
+		 * @param array     $qrdata The QR data array.
+		 * @param \WC_Order $order  The order the QR code is for.
+		 */
+		$qrdata = (array) apply_filters( 'pay_by_square_qrdata', $qrdata, $order );
+
 		$json   = wp_json_encode( $qrdata + [ 'display' => $display ] );
 		if ( false === $json ) {
 			$this->logger->error( 'Encoding of QR code properties into JSON has failed' );
