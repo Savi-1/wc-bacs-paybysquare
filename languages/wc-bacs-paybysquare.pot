@@ -50,17 +50,17 @@ msgid "PAY by square Settings"
 msgstr ""
 
 #. translators: %s: link to new settings page
-#: src/class-plugin.php:308
+#: src/class-plugin.php:317
 #, php-format
 msgid "The PAY by square settings were moved to %s"
 msgstr ""
 
-#: src/class-plugin.php:309
+#: src/class-plugin.php:318
 #: src/class-settings.php:36
 msgid "PAY by square"
 msgstr ""
 
-#: src/class-plugin.php:395
+#: src/class-plugin.php:404
 msgid "For convenient payment, scan this QR code with your banking app:"
 msgstr ""
 
