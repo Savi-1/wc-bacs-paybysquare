@@ -613,6 +613,16 @@ class Plugin {
 
 				// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
 				$raw_image_data = base64_decode( $base64_image_data );
+
+				// Verify the decoded payload is actually a PNG before writing it
+				// to disk. base64_decode() in non-strict mode silently yields
+				// garbage on malformed input, and a 200 response carrying a
+				// non-image body would otherwise be persisted as a .png.
+				if ( "\x89PNG" !== substr( $raw_image_data, 0, 4 ) ) {
+					$this->logger->error( 'Decoded QR code data is not a valid PNG image.' );
+					return [];
+				}
+
 				error_clear_last();
 				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
 				if ( false === file_put_contents( $path, $raw_image_data, LOCK_EX ) ) {
