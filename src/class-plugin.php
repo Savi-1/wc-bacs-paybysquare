@@ -501,7 +501,7 @@ class Plugin {
 		 * @param string    $variable_symbol Default VS derived from the order number.
 		 * @param \WC_Order $order           The order the QR code is for.
 		 */
-		$qrdata['variable_symbol'] = (string) apply_filters( 'pay_by_square_qr_variable_symbol', $qrdata['variable_symbol'], $order );
+		$qrdata['variable_symbol'] = self::scalar_to_string( apply_filters( 'pay_by_square_qr_variable_symbol', $qrdata['variable_symbol'], $order ) );
 
 		/**
 		 * Filter the full QR data array before XML generation.
@@ -516,7 +516,31 @@ class Plugin {
 		 */
 		$qrdata = (array) apply_filters( 'pay_by_square_qrdata', $qrdata, $order );
 
-		$json   = wp_json_encode( $qrdata + [ 'display' => $display ] );
+		// apply_filters() returns mixed, so re-normalize the structure into known
+		// scalar types — both to satisfy static analysis and to stay robust if a
+		// filter hands back unexpected values.
+		$normalized_accounts = [];
+		$filtered_accounts   = $qrdata['bank_accounts'] ?? [];
+		if ( is_array( $filtered_accounts ) ) {
+			foreach ( $filtered_accounts as $bank_account ) {
+				if ( is_array( $bank_account ) && isset( $bank_account['iban'], $bank_account['bic'] ) ) {
+					$normalized_accounts[] = [
+						'iban' => self::scalar_to_string( $bank_account['iban'] ),
+						'bic'  => self::scalar_to_string( $bank_account['bic'] ),
+					];
+				}
+			}
+		}
+		$qrdata = [
+			'total'            => self::scalar_to_string( $qrdata['total'] ?? '' ),
+			'currency'         => self::scalar_to_string( $qrdata['currency'] ?? '' ),
+			'variable_symbol'  => self::scalar_to_string( $qrdata['variable_symbol'] ?? '' ),
+			'payment_note'     => self::scalar_to_string( $qrdata['payment_note'] ?? '' ),
+			'beneficiary_name' => self::scalar_to_string( $qrdata['beneficiary_name'] ?? '' ),
+			'bank_accounts'    => $normalized_accounts,
+		];
+
+		$json = wp_json_encode( $qrdata + [ 'display' => $display ] );
 		if ( false === $json ) {
 			$this->logger->error( 'Encoding of QR code properties into JSON has failed' );
 			return [];
@@ -678,5 +702,19 @@ class Plugin {
 	protected static function sanitize( $value ) {
 		// allow only alphanumeric characters (and uppercase lowercased ones).
 		return preg_replace( '/[^0-9A-Z]+/', '', strtoupper( $value ) ) ?? '';
+	}
+
+	/**
+	 * Coerce a possibly-mixed value (e.g. a filtered QR field) to a string.
+	 *
+	 * Filter callbacks return mixed; non-scalars collapse to an empty string so
+	 * the generated XML never receives an array or object.
+	 *
+	 * @internal
+	 * @param mixed $value the value to coerce.
+	 * @return string
+	 */
+	protected static function scalar_to_string( $value ) {
+		return is_scalar( $value ) ? (string) $value : '';
 	}
 }
