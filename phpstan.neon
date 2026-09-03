@@ -10,5 +10,7 @@ parameters:
     - vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php
   level: max
   # The plugin advertises PHP 7.4 as its runtime floor while the dev tooling
-  # needs 8.1+. Analyse as 7.4 so a newer function or syntax cannot slip in.
+  # needs 8.1+. Analyse at that floor so 8.x-only functions or syntax cannot
+  # slip in. This guards the low end only: symbols removed in PHP 8 are not
+  # reported here; the unit-test job on PHP 8.x is what exercises that side.
   phpVersion: 70400

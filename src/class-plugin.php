@@ -323,7 +323,12 @@ class Plugin {
 	/**
 	 * Render QR code on thank you page.
 	 *
-	 * @param int $order_id the order ID to render QR code for.
+	 * Public API: shops call this directly to place the default markup
+	 * elsewhere. Like the getters below it does not check the payment method
+	 * or the order status — the caller decides where the code belongs.
+	 *
+	 * @param \WC_Order|int $order_id Order object or order ID (the
+	 *                                woocommerce_thankyou_bacs hook passes an ID).
 	 * @return void
 	 */
 	public function thankyou_page_qrcode( $order_id ) {
@@ -342,7 +347,11 @@ class Plugin {
 	 * Public API for shops that render the QR code in their own markup — a
 	 * custom thank-you page, an invoice, the account order view. The image is
 	 * generated on first use and served from the uploads cache afterwards, so
-	 * repeated calls do not spend further app.bysquare.com credits.
+	 * repeated calls for the same order do not spend further app.bysquare.com
+	 * credits; each new order (or changed payload) costs one generation.
+	 *
+	 * No payment-method or status gate: the caller decides when a bank-transfer
+	 * QR code belongs on the page.
 	 *
 	 * @since 3.2.0
 	 * @param \WC_Order|int $order Order object or order ID.
@@ -357,7 +366,7 @@ class Plugin {
 	 * Absolute filesystem path of the QR code image for an order.
 	 *
 	 * For embedding the image into PDFs or emails, where a URL is not enough.
-	 * Same generation and caching rules as get_qrcode_url().
+	 * Same generation, caching and no-gating rules as get_qrcode_url().
 	 *
 	 * @since 3.2.0
 	 * @param \WC_Order|int $order Order object or order ID.

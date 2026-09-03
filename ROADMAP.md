@@ -35,7 +35,7 @@
 |---|------------|-----|
 | 15 | `.distignore` + GitHub deploy action — auto-deploy to WordPress.org SVN on release | Eliminates manual SVN process. |
 | 16 | Rename `assets/` to `.wordpress-org/` | Proper WordPress.org repo structure. |
-| 17 | Block checkout explicit testing — readme claims support but no block-specific code exists | May work via legacy hooks, should be verified. |
+| 17 | Block checkout end-to-end test — 3.2.0 declares `cart_checkout_blocks` compatibility, the smoke test asserts the declaration and checks the Order Confirmation template keeps the "Additional information" block (the only place `woocommerce_thankyou_bacs` fires on block themes), and the FAQ documents it. Still missing: a live render on a block theme (wp-env Tier 2.5). | Closes the remaining gap between "declared" and "seen working". |
 
 ## Recommended Phases
 
