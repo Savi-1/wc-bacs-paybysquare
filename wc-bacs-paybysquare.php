@@ -31,12 +31,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// declare compatibility with High-Performace Order Storage (HPOS).
+// Declare compatibility with High-Performance Order Storage (HPOS) and with
+// the Cart & Checkout blocks. The block Order Confirmation template fires the
+// same woocommerce_thankyou_bacs hook the plugin renders on.
 add_action(
 	'before_woocommerce_init',
 	function () {
 		if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
 			\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__, true );
+			\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'cart_checkout_blocks', __FILE__, true );
 		}
 	}
 );

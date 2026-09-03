@@ -95,6 +95,8 @@ final class HookRegistrationTest extends QrTestCase {
 			[ 'get_instance' ],
 			[ 'thankyou_page_qrcode' ],
 			[ 'onhold_email_qrcode_info' ],
+			[ 'get_qrcode_url' ],
+			[ 'get_qrcode_path' ],
 		];
 	}
 }

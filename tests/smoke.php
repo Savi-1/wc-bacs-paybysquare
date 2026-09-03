@@ -118,6 +118,13 @@ if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
 			|| in_array( $plugin_id, $hpos['uncertain'], true )
 		)
 	);
+
+	$blocks = \Automattic\WooCommerce\Utilities\FeaturesUtil::get_compatible_plugins_for_feature( 'cart_checkout_blocks' );
+	check(
+		'Cart & Checkout blocks compatibility declared as compatible',
+		in_array( $plugin_id, $blocks['compatible'] ?? [], true ),
+		'older WooCommerce lists undeclared plugins as incompatible in the Checkout block editor'
+	);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -163,9 +170,9 @@ check(
 	-1000 === has_action( 'woocommerce_email_order_meta', [ $pbsq_plugin, 'onhold_email_qrcode_info' ] )
 );
 
-// Shops place the QR code outside the default hook position by calling this
-// method directly, so its visibility is part of the public contract.
-foreach ( [ 'get_instance', 'thankyou_page_qrcode', 'onhold_email_qrcode_info' ] as $pbsq_method ) {
+// Shops place the QR code outside the default hook position by calling these
+// methods directly, so their visibility is part of the public contract.
+foreach ( [ 'get_instance', 'thankyou_page_qrcode', 'onhold_email_qrcode_info', 'get_qrcode_url', 'get_qrcode_path' ] as $pbsq_method ) {
 	$pbsq_reflection = new ReflectionMethod( Plugin::class, $pbsq_method );
 	check( "Plugin::$pbsq_method() is public", $pbsq_reflection->isPublic() );
 }

@@ -327,16 +327,61 @@ class Plugin {
 	 * @return void
 	 */
 	public function thankyou_page_qrcode( $order_id ) {
-		$order = wc_get_order( $order_id );
 		// No status gate on purpose: this mirrors WC_Gateway_BACS::thankyou_page(),
 		// which prints the bank details for any status, while the email path
 		// mirrors WC_Gateway_BACS::email_instructions() and requires on-hold.
-		if ( $order instanceof \WC_Order ) {
-			$info = $this->fetch_qrcode_png_info( $order );
-			if ( $info ) {
-				$this->output_qr_code_image( $info[1] );
-			}
+		$info = $this->get_qrcode_info( $order_id );
+		if ( $info ) {
+			$this->output_qr_code_image( $info[1] );
 		}
+	}
+
+	/**
+	 * URL of the QR code image for an order.
+	 *
+	 * Public API for shops that render the QR code in their own markup — a
+	 * custom thank-you page, an invoice, the account order view. The image is
+	 * generated on first use and served from the uploads cache afterwards, so
+	 * repeated calls do not spend further app.bysquare.com credits.
+	 *
+	 * @since 3.2.0
+	 * @param \WC_Order|int $order Order object or order ID.
+	 * @return string Image URL, or an empty string when no QR code can be produced.
+	 */
+	public function get_qrcode_url( $order ) {
+		$info = $this->get_qrcode_info( $order );
+		return $info ? $info[1] : '';
+	}
+
+	/**
+	 * Absolute filesystem path of the QR code image for an order.
+	 *
+	 * For embedding the image into PDFs or emails, where a URL is not enough.
+	 * Same generation and caching rules as get_qrcode_url().
+	 *
+	 * @since 3.2.0
+	 * @param \WC_Order|int $order Order object or order ID.
+	 * @return string Image path, or an empty string when no QR code can be produced.
+	 */
+	public function get_qrcode_path( $order ) {
+		$info = $this->get_qrcode_info( $order );
+		return $info ? $info[0] : '';
+	}
+
+	/**
+	 * Resolve an order reference and run the QR pipeline for it.
+	 *
+	 * @param \WC_Order|int $order Order object or order ID.
+	 * @return array{0: string, 1: string, 2: string}|array{}
+	 */
+	protected function get_qrcode_info( $order ) {
+		if ( ! $order instanceof \WC_Order ) {
+			$order = wc_get_order( $order );
+		}
+		if ( ! $order instanceof \WC_Order ) {
+			return [];
+		}
+		return $this->fetch_qrcode_png_info( $order );
 	}
 
 	/**
