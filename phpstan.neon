@@ -9,3 +9,6 @@ parameters:
     - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
     - vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php
   level: max
+  # The plugin advertises PHP 7.4 as its runtime floor while the dev tooling
+  # needs 8.1+. Analyse as 7.4 so a newer function or syntax cannot slip in.
+  phpVersion: 70400
