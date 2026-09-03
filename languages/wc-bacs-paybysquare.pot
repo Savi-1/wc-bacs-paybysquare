@@ -60,7 +60,7 @@ msgstr ""
 msgid "PAY by square"
 msgstr ""
 
-#: src/class-plugin.php:404
+#: src/class-plugin.php:457
 msgid "For convenient payment, scan this QR code with your banking app:"
 msgstr ""
 

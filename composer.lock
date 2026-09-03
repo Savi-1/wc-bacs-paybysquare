@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "4a3e20a361262f1479ee30506d7c44da",
+    "content-hash": "32052814e7f6ce8f78da1a1c34d8cbb8",
     "packages": [],
     "packages-dev": [
         {
@@ -2502,16 +2502,16 @@
         },
         {
             "name": "wp-cli/i18n-command",
-            "version": "v2.7.0",
+            "version": "v2.6.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/wp-cli/i18n-command.git",
-                "reference": "e91e6903d212486e32ed2c916171f661bfc539ce"
+                "reference": "94f72ddc4be8919f2cea181ba39cd140dd480d64"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/wp-cli/i18n-command/zipball/e91e6903d212486e32ed2c916171f661bfc539ce",
-                "reference": "e91e6903d212486e32ed2c916171f661bfc539ce",
+                "url": "https://api.github.com/repos/wp-cli/i18n-command/zipball/94f72ddc4be8919f2cea181ba39cd140dd480d64",
+                "reference": "94f72ddc4be8919f2cea181ba39cd140dd480d64",
                 "shasum": ""
             },
             "require": {
@@ -2533,7 +2533,6 @@
                 "bundled": true,
                 "commands": [
                     "i18n",
-                    "i18n audit",
                     "i18n make-pot",
                     "i18n make-json",
                     "i18n make-mo",
@@ -2566,9 +2565,9 @@
             "homepage": "https://github.com/wp-cli/i18n-command",
             "support": {
                 "issues": "https://github.com/wp-cli/i18n-command/issues",
-                "source": "https://github.com/wp-cli/i18n-command/tree/v2.7.0"
+                "source": "https://github.com/wp-cli/i18n-command/tree/v2.6.6"
             },
-            "time": "2026-03-16T17:13:39+00:00"
+            "time": "2025-11-21T04:23:34+00:00"
         },
         {
             "name": "wp-cli/mustache",
