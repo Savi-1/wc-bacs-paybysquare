@@ -328,6 +328,9 @@ class Plugin {
 	 */
 	public function thankyou_page_qrcode( $order_id ) {
 		$order = wc_get_order( $order_id );
+		// No status gate on purpose: this mirrors WC_Gateway_BACS::thankyou_page(),
+		// which prints the bank details for any status, while the email path
+		// mirrors WC_Gateway_BACS::email_instructions() and requires on-hold.
 		if ( $order instanceof \WC_Order ) {
 			$info = $this->fetch_qrcode_png_info( $order );
 			if ( $info ) {
@@ -365,6 +368,11 @@ class Plugin {
 	 */
 	public function onhold_email_attachments( $phpmailer ) {
 		$order = $this->order;
+		// One-shot: onhold_email_qrcode_info() arms this hook per email. Disarm
+		// first so a later wp_mail() in the same request (another order's email,
+		// an admin copy) never inherits this order's image.
+		remove_action( 'phpmailer_init', [ $this, 'onhold_email_attachments' ] );
+		$this->order = null;
 		if ( $order instanceof \WC_Order && 'bacs' === $order->get_payment_method() && 'on-hold' === $order->get_status() ) {
 			$info = $this->fetch_qrcode_png_info( $order );
 			if ( $info ) {
@@ -425,15 +433,15 @@ class Plugin {
 			return [];
 		}
 		$bank_accounts = [];
-		foreach ( $bacs->account_details as $account ) {
-			/**
-			 * Bank account properties.
-			 *
-			 * @var array{iban: string, bic: string}
-			 */
-			$bank_account = $account;
-			$iban         = static::sanitize( $bank_account['iban'] );
-			$bic          = static::sanitize( $bank_account['bic'] );
+		foreach ( (array) $bacs->account_details as $account ) {
+			// Rows saved by WooCommerce always carry both keys, but the option is
+			// plain array data that filters or older installs may have shaped
+			// differently — skip anything that is not a complete row.
+			if ( ! is_array( $account ) || ! isset( $account['iban'], $account['bic'] ) ) {
+				continue;
+			}
+			$iban = static::sanitize( self::scalar_to_string( $account['iban'] ) );
+			$bic  = static::sanitize( self::scalar_to_string( $account['bic'] ) );
 			// Validate: IBAN must be 15-34 chars starting with 2 letters + 2 digits, BIC must be 8 or 11 chars.
 			if ( $iban && $bic && preg_match( '/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/', $iban ) && preg_match( '/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/', $bic ) ) {
 				$bank_accounts[] = [
@@ -509,7 +517,10 @@ class Plugin {
 		 * Covers every field (total, currency, variable_symbol, payment_note,
 		 * beneficiary_name, bank_accounts). Runs after
 		 * `pay_by_square_qr_variable_symbol` so the narrow filter's result is
-		 * visible here.
+		 * visible here. Note that `currency` only changes the currency code sent
+		 * with the amount — the QR standard (PAY by square vs. QR Platba) is
+		 * chosen from the order currency and the "display" setting before this
+		 * filter runs.
 		 *
 		 * @param array     $qrdata The QR data array.
 		 * @param \WC_Order $order  The order the QR code is for.
@@ -550,8 +561,16 @@ class Plugin {
 		$path = $wp_upload['basedir'] . '/' . $file;
 		$url  = $wp_upload['baseurl'] . '/' . $file;
 
+		// Serve the cached image only if it really is a PNG. A file written by a
+		// version without the magic-byte guard below, or truncated by a failed
+		// write, must be regenerated rather than shown to the customer.
 		if ( file_exists( $path ) ) {
-			return [ $path, $url, $hash ];
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			$cached = file_get_contents( $path, false, null, 0, 4 );
+			if ( "\x89PNG" === $cached ) {
+				return [ $path, $url, $hash ];
+			}
+			$this->logger->warning( 'Cached QR code file is not a valid PNG image, regenerating: ' . $path );
 		}
 
 		if ( ! wp_mkdir_p( dirname( $path ) ) ) {
@@ -612,10 +631,17 @@ class Plugin {
 			return [];
 		}
 
-		$code   = $result['response']['code'];
-		$parsed = simplexml_load_string( $result['body'] );
+		$code = $result['response']['code'];
+		// Keep libxml parser warnings out of the thank-you page and email output;
+		// the first parser message is folded into the log entry instead.
+		$previous_libxml = libxml_use_internal_errors( true );
+		$parsed          = simplexml_load_string( $result['body'] );
+		$libxml_errors   = libxml_get_errors();
+		libxml_clear_errors();
+		libxml_use_internal_errors( $previous_libxml );
 		if ( false === $parsed ) {
-			$this->logger->error( 'Response is not valid XML (code = ' . $code . ').' );
+			$detail = isset( $libxml_errors[0] ) ? ' ' . trim( $libxml_errors[0]->message ) : '';
+			$this->logger->error( 'Response is not valid XML (code = ' . $code . ').' . $detail );
 			return [];
 		}
 

@@ -73,6 +73,14 @@ Plugin používa na vloženie QR kódu do emailu knižnicu PHPMailer. Ak využí
 
 == Changelog ==
 
+= Unreleased =
+* Pridané filtre `pay_by_square_qr_variable_symbol` a `pay_by_square_qrdata` na úpravu variabilného symbolu a ďalších údajov v QR kóde (napr. podľa čísla zálohovej faktúry)
+* Opravené zobrazenie upozornenia o presunutých nastaveniach – zobrazí sa už len v sekcii Bankový prevod
+* Opravené: poškodený alebo prázdny QR obrázok v cache sa už nezobrazí, plugin ho vygeneruje nanovo
+* Opravené: QR obrázok sa už neprikladá k ďalším emailom odoslaným v tej istej požiadavke
+* Opravené: neplatná odpoveď služby app.bysquare.com už nevypisuje PHP varovania na ďakovnej stránke, chyba sa zapíše do logu
+* Neúplný bankový účet v nastaveniach Bankového prevodu sa pri tvorbe QR kódu preskočí
+
 = 3.1.0 =
 * Pridaný Live Preview na stránke pluginu na WordPress.org (WordPress Playground blueprint)
 * Pridané upozornenie v nastaveniach pluginu ak nie je vyplnené pole „Príjemca platby"
