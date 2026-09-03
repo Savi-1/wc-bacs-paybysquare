@@ -111,10 +111,12 @@ flatten_wc_if_nested() {
 flatten_wc_if_nested
 
 echo "▶ Active plugins:"
-npx --yes @wordpress/env run cli wp plugin list --status=active --field=name
+npx --yes @wordpress/env run cli wp plugin list --status=active --field=name --allow-root
 
 echo "▶ Running smoke test against fresh install..."
-if ! npx --yes @wordpress/env run cli wp eval-file "wp-content/plugins/${PLUGIN_SLUG}/tests/smoke.php"; then
+# Pass `skip-backlog-gate` so the release-readiness BACKLOG.md gate in smoke.php
+# doesn't fail this loadability check (the gate is for the manual pre-tag run).
+if ! npx --yes @wordpress/env run cli wp --allow-root eval-file "wp-content/plugins/${PLUGIN_SLUG}/tests/smoke.php" skip-backlog-gate; then
   echo
   echo "✗ Tier 2.5 FAILED — smoke had failures on fresh install"
   echo "  (the shared test site Tier-2 may still be green; this surfaces fresh-install-only bugs)"
@@ -123,7 +125,7 @@ fi
 
 # Tier 3 — scenario tests. If the plugin ships tests/e2e/scenarios/*.php,
 # run each in order. Each scenario is a standalone PHP script run via
-# `wp eval-file`; it does its own setup → action → assertion → teardown
+# `wp --allow-root eval-file`; it does its own setup → action → assertion → teardown
 # and exits 0 on pass, 1 on fail. Scenarios are independent of each other
 # (no shared state assumed); failure of one doesn't abort the rest.
 scenarios_dir="tests/e2e/scenarios"
@@ -136,7 +138,7 @@ if compgen -G "${scenarios_dir}/*.php" >/dev/null 2>&1; then
     scenario_count=$((scenario_count + 1))
     name=$(basename "$scenario")
     echo "  ▶ ${name}"
-    if ! npx --yes @wordpress/env run cli wp eval-file "wp-content/plugins/${PLUGIN_SLUG}/${scenario}"; then
+    if ! npx --yes @wordpress/env run cli wp --allow-root eval-file "wp-content/plugins/${PLUGIN_SLUG}/${scenario}"; then
       scenario_failed=$((scenario_failed + 1))
     fi
   done

@@ -18,6 +18,8 @@ jobs:
         with:
           php_version: '8.4'
           args: --no-scripts
+      - name: Unit Tests
+        run: jobs/unit-tests.sh
       - name: Code Standards
         run: jobs/code-standards.sh
       - name: Static Analysis
