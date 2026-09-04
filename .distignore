@@ -1,0 +1,41 @@
+# Files that must not ship to wordpress.org SVN trunk/ (used by
+# `wp dist-archive` and as the checklist for the manual SVN copy).
+# What ships: wc-bacs-paybysquare.php, src/, languages/, readme.txt,
+# changelog.txt. The assets/ directory goes to the SVN assets/ folder,
+# not into trunk/.
+
+# Version control + tooling
+.git
+.github
+.gitignore
+.gitattributes
+.distignore
+.editorconfig
+.claude
+.DS_Store
+
+# Composer (dev-only dependencies; the plugin has no runtime vendor/)
+composer.json
+composer.lock
+vendor
+
+# Quality tooling
+.phpcs.xml
+phpstan.neon
+phpstan-rules
+phpunit.xml
+phpunit.xml.dist
+.phpunit.cache
+.wp-env.json
+jobs
+tests
+
+# wordpress.org SVN assets/ (Playground blueprint, screenshots)
+assets
+screenshots
+
+# Internal docs
+BACKLOG.md
+CLAUDE.md
+DEVELOPER.md
+ROADMAP.md

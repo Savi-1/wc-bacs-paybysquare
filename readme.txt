@@ -2,13 +2,13 @@
 Contributors: webikon, kravco, johnnypea, martinkrcho, savione
 Tags: pay by square, qr platba, qrcode, bacs, woocommerce
 Requires at least: 6.0
-Tested up to: 6.9.4
+Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 3.1.0
+Stable tag: 3.2.0
 WC requires at least: 8.0
-WC tested up to: 10.6
+WC tested up to: 11.1
 License: GPLv2 or later
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Pridá QR kód k platbe prevodom vo WooCommerce. Do objednávky aj do emailu. Podporuje PAY by square (SK) aj QR Platba (CZ).
 
@@ -62,7 +62,26 @@ Plugin používa na vloženie QR kódu do emailu knižnicu PHPMailer. Ak využí
 
 = Podporuje plugin blokový checkout? =
 
-Áno, QR kód sa zobrazí na ďakovnej stránke aj pri použití blokového checkoutu (WooCommerce 8.9+).
+Áno, QR kód sa zobrazí na ďakovnej stránke aj pri použití blokového checkoutu (WooCommerce 8.9+). Bloková šablóna „Potvrdenie objednávky" musí obsahovať blok „Doplňujúce informácie" – práve v ňom WooCommerce zobrazuje doplnky platobných metód. Ak ste šablónu upravovali vo Vzhľad → Editor → Šablóny a tento blok odstránili, QR kód sa na ďakovnej stránke nezobrazí.
+
+= Ako zobrazím QR kód na vlastnom mieste? =
+
+Plugin poskytuje verejné metódy, ktoré vrátia adresu alebo cestu k obrázku QR kódu pre danú objednávku. Obrázok sa vygeneruje pri prvom volaní a ďalej sa berie z cache, takže opakované volania pre tú istú objednávku nespotrebúvajú ďalší kredit na app.bysquare.com; každá nová objednávka (alebo zmena sumy) spotrebuje jedno vygenerovanie.
+
+Metódy nekontrolujú spôsob platby ani stav objednávky – QR kód vrátia pre akúkoľvek objednávku. O tom, kedy sa má zobraziť, rozhoduje váš kód:
+
+`
+if ( class_exists( '\Webikon\Woocommerce_Plugin\WC_BACS_Paybysquare\Plugin' ) ) {
+    $order = wc_get_order( $order_id );
+    if ( $order && 'bacs' === $order->get_payment_method() ) {
+        $plugin = \Webikon\Woocommerce_Plugin\WC_BACS_Paybysquare\Plugin::get_instance();
+        $url    = $plugin->get_qrcode_url( $order );  // adresa obrázka; '' ak QR kód nie je k dispozícii
+        $path   = $plugin->get_qrcode_path( $order ); // cesta k súboru, napr. na vloženie do PDF faktúry
+    }
+}
+`
+
+Obe metódy prijímajú objekt WC_Order alebo ID objednávky. Hotový HTML blok s obrázkom vykreslí metóda `thankyou_page_qrcode( $order )` s rovnakým parametrom. Údaje v QR kóde upravíte filtrami `pay_by_square_qr_variable_symbol` (variabilný symbol) a `pay_by_square_qrdata` (všetky polia).
 
 == Screenshots ==
 
@@ -72,6 +91,17 @@ Plugin používa na vloženie QR kódu do emailu knižnicu PHPMailer. Ak využí
 4. QR kód v potvrdzujúcom emaile
 
 == Changelog ==
+
+= 3.2.0 =
+* Pripravené pre WordPress 7.1 + WooCommerce 11.1.
+* Pridané filtre `pay_by_square_qr_variable_symbol` a `pay_by_square_qrdata` na úpravu variabilného symbolu a ďalších údajov v QR kóde.
+* QR kód sa dá zobraziť aj na vlastnom mieste – vo faktúre, v detaile objednávky či na vlastnej ďakovnej stránke (postup vo FAQ).
+* Deklarovaná kompatibilita s blokovým košíkom a pokladňou WooCommerce.
+* Opravené: upozornenie o presunutých nastaveniach sa zobrazí len v sekcii Bankový prevod.
+* Opravené: poškodený alebo prázdny QR obrázok v cache sa vygeneruje nanovo.
+* Opravené: QR obrázok sa už neprikladá k ďalším emailom odoslaným v tej istej požiadavke.
+* Opravené: chybná odpoveď služby app.bysquare.com sa zapíše do logu bez PHP varovaní.
+* Neúplný bankový účet v nastaveniach Bankového prevodu sa pri tvorbe QR kódu preskočí.
 
 = 3.1.0 =
 * Pridaný Live Preview na stránke pluginu na WordPress.org (WordPress Playground blueprint)

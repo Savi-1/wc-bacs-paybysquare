@@ -300,9 +300,18 @@ class Plugin {
 		 */
 		global $current_screen;
 		global $current_tab;
+		global $current_section;
 
-		// Provide the note + link to the new settings on pages were the settings were before.
-		if ( $current_screen && 'woocommerce_page_wc-settings' === $current_screen->id && 'checkout' === $current_tab ) {
+		// Show the "settings were moved" note only on the BACS payment-gateway
+		// settings page (where PAY by square used to live). Previously the note
+		// fired on every gateway section under WC → Settings → Payments because
+		// the condition didn't gate on $current_section.
+		if (
+			$current_screen
+			&& 'woocommerce_page_wc-settings' === $current_screen->id
+			&& 'checkout' === $current_tab
+			&& 'bacs' === $current_section
+		) {
 			echo '<p>' . sprintf(
 				/* translators: %s: link to new settings page */
 				esc_html__( 'The PAY by square settings were moved to %s', 'wc-bacs-paybysquare' ),
@@ -314,17 +323,74 @@ class Plugin {
 	/**
 	 * Render QR code on thank you page.
 	 *
-	 * @param int $order_id the order ID to render QR code for.
+	 * Public API: shops call this directly to place the default markup
+	 * elsewhere. Like the getters below it does not check the payment method
+	 * or the order status — the caller decides where the code belongs.
+	 *
+	 * @param \WC_Order|int $order_id Order object or order ID (the
+	 *                                woocommerce_thankyou_bacs hook passes an ID).
 	 * @return void
 	 */
 	public function thankyou_page_qrcode( $order_id ) {
-		$order = wc_get_order( $order_id );
-		if ( $order instanceof \WC_Order ) {
-			$info = $this->fetch_qrcode_png_info( $order );
-			if ( $info ) {
-				$this->output_qr_code_image( $info[1] );
-			}
+		// No status gate on purpose: this mirrors WC_Gateway_BACS::thankyou_page(),
+		// which prints the bank details for any status, while the email path
+		// mirrors WC_Gateway_BACS::email_instructions() and requires on-hold.
+		$info = $this->get_qrcode_info( $order_id );
+		if ( $info ) {
+			$this->output_qr_code_image( $info[1] );
 		}
+	}
+
+	/**
+	 * URL of the QR code image for an order.
+	 *
+	 * Public API for shops that render the QR code in their own markup — a
+	 * custom thank-you page, an invoice, the account order view. The image is
+	 * generated on first use and served from the uploads cache afterwards, so
+	 * repeated calls for the same order do not spend further app.bysquare.com
+	 * credits; each new order (or changed payload) costs one generation.
+	 *
+	 * No payment-method or status gate: the caller decides when a bank-transfer
+	 * QR code belongs on the page.
+	 *
+	 * @since 3.2.0
+	 * @param \WC_Order|int $order Order object or order ID.
+	 * @return string Image URL, or an empty string when no QR code can be produced.
+	 */
+	public function get_qrcode_url( $order ) {
+		$info = $this->get_qrcode_info( $order );
+		return $info ? $info[1] : '';
+	}
+
+	/**
+	 * Absolute filesystem path of the QR code image for an order.
+	 *
+	 * For embedding the image into PDFs or emails, where a URL is not enough.
+	 * Same generation, caching and no-gating rules as get_qrcode_url().
+	 *
+	 * @since 3.2.0
+	 * @param \WC_Order|int $order Order object or order ID.
+	 * @return string Image path, or an empty string when no QR code can be produced.
+	 */
+	public function get_qrcode_path( $order ) {
+		$info = $this->get_qrcode_info( $order );
+		return $info ? $info[0] : '';
+	}
+
+	/**
+	 * Resolve an order reference and run the QR pipeline for it.
+	 *
+	 * @param \WC_Order|int $order Order object or order ID.
+	 * @return array{0: string, 1: string, 2: string}|array{}
+	 */
+	protected function get_qrcode_info( $order ) {
+		if ( ! $order instanceof \WC_Order ) {
+			$order = wc_get_order( $order );
+		}
+		if ( ! $order instanceof \WC_Order ) {
+			return [];
+		}
+		return $this->fetch_qrcode_png_info( $order );
 	}
 
 	/**
@@ -356,6 +422,11 @@ class Plugin {
 	 */
 	public function onhold_email_attachments( $phpmailer ) {
 		$order = $this->order;
+		// One-shot: onhold_email_qrcode_info() arms this hook per email. Disarm
+		// first so a later wp_mail() in the same request (another order's email,
+		// an admin copy) never inherits this order's image.
+		remove_action( 'phpmailer_init', [ $this, 'onhold_email_attachments' ] );
+		$this->order = null;
 		if ( $order instanceof \WC_Order && 'bacs' === $order->get_payment_method() && 'on-hold' === $order->get_status() ) {
 			$info = $this->fetch_qrcode_png_info( $order );
 			if ( $info ) {
@@ -416,15 +487,15 @@ class Plugin {
 			return [];
 		}
 		$bank_accounts = [];
-		foreach ( $bacs->account_details as $account ) {
-			/**
-			 * Bank account properties.
-			 *
-			 * @var array{iban: string, bic: string}
-			 */
-			$bank_account = $account;
-			$iban         = static::sanitize( $bank_account['iban'] );
-			$bic          = static::sanitize( $bank_account['bic'] );
+		foreach ( (array) $bacs->account_details as $account ) {
+			// Rows saved by WooCommerce always carry both keys, but the option is
+			// plain array data that filters or older installs may have shaped
+			// differently — skip anything that is not a complete row.
+			if ( ! is_array( $account ) || ! isset( $account['iban'], $account['bic'] ) ) {
+				continue;
+			}
+			$iban = static::sanitize( self::scalar_to_string( $account['iban'] ) );
+			$bic  = static::sanitize( self::scalar_to_string( $account['bic'] ) );
 			// Validate: IBAN must be 15-34 chars starting with 2 letters + 2 digits, BIC must be 8 or 11 chars.
 			if ( $iban && $bic && preg_match( '/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/', $iban ) && preg_match( '/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/', $bic ) ) {
 				$bank_accounts[] = [
@@ -481,7 +552,60 @@ class Plugin {
 			'beneficiary_name' => $beneficiary_name,
 			'bank_accounts'    => $bank_accounts,
 		];
-		$json   = wp_json_encode( $qrdata + [ 'display' => $display ] );
+
+		/**
+		 * Filter the variable symbol used in the QR code.
+		 *
+		 * Use this to replace the default (order number, digits-only, max 10
+		 * chars) with e.g. a proforma-invoice number from an integrated
+		 * invoicing plugin so bank transfers reconcile against invoices.
+		 *
+		 * @param string    $variable_symbol Default VS derived from the order number.
+		 * @param \WC_Order $order           The order the QR code is for.
+		 */
+		$qrdata['variable_symbol'] = self::scalar_to_string( apply_filters( 'pay_by_square_qr_variable_symbol', $qrdata['variable_symbol'], $order ) );
+
+		/**
+		 * Filter the full QR data array before XML generation.
+		 *
+		 * Covers every field (total, currency, variable_symbol, payment_note,
+		 * beneficiary_name, bank_accounts). Runs after
+		 * `pay_by_square_qr_variable_symbol` so the narrow filter's result is
+		 * visible here. Note that `currency` only changes the currency code sent
+		 * with the amount — the QR standard (PAY by square vs. QR Platba) is
+		 * chosen from the order currency and the "display" setting before this
+		 * filter runs.
+		 *
+		 * @param array     $qrdata The QR data array.
+		 * @param \WC_Order $order  The order the QR code is for.
+		 */
+		$qrdata = (array) apply_filters( 'pay_by_square_qrdata', $qrdata, $order );
+
+		// apply_filters() returns mixed, so re-normalize the structure into known
+		// scalar types — both to satisfy static analysis and to stay robust if a
+		// filter hands back unexpected values.
+		$normalized_accounts = [];
+		$filtered_accounts   = $qrdata['bank_accounts'] ?? [];
+		if ( is_array( $filtered_accounts ) ) {
+			foreach ( $filtered_accounts as $bank_account ) {
+				if ( is_array( $bank_account ) && isset( $bank_account['iban'], $bank_account['bic'] ) ) {
+					$normalized_accounts[] = [
+						'iban' => self::scalar_to_string( $bank_account['iban'] ),
+						'bic'  => self::scalar_to_string( $bank_account['bic'] ),
+					];
+				}
+			}
+		}
+		$qrdata = [
+			'total'            => self::scalar_to_string( $qrdata['total'] ?? '' ),
+			'currency'         => self::scalar_to_string( $qrdata['currency'] ?? '' ),
+			'variable_symbol'  => self::scalar_to_string( $qrdata['variable_symbol'] ?? '' ),
+			'payment_note'     => self::scalar_to_string( $qrdata['payment_note'] ?? '' ),
+			'beneficiary_name' => self::scalar_to_string( $qrdata['beneficiary_name'] ?? '' ),
+			'bank_accounts'    => $normalized_accounts,
+		];
+
+		$json = wp_json_encode( $qrdata + [ 'display' => $display ] );
 		if ( false === $json ) {
 			$this->logger->error( 'Encoding of QR code properties into JSON has failed' );
 			return [];
@@ -491,8 +615,16 @@ class Plugin {
 		$path = $wp_upload['basedir'] . '/' . $file;
 		$url  = $wp_upload['baseurl'] . '/' . $file;
 
+		// Serve the cached image only if it really is a PNG. A file written by a
+		// version without the magic-byte guard below, or truncated by a failed
+		// write, must be regenerated rather than shown to the customer.
 		if ( file_exists( $path ) ) {
-			return [ $path, $url, $hash ];
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+			$cached = file_get_contents( $path, false, null, 0, 4 );
+			if ( "\x89PNG" === $cached ) {
+				return [ $path, $url, $hash ];
+			}
+			$this->logger->warning( 'Cached QR code file is not a valid PNG image, regenerating: ' . $path );
 		}
 
 		if ( ! wp_mkdir_p( dirname( $path ) ) ) {
@@ -553,10 +685,17 @@ class Plugin {
 			return [];
 		}
 
-		$code   = $result['response']['code'];
-		$parsed = simplexml_load_string( $result['body'] );
+		$code = $result['response']['code'];
+		// Keep libxml parser warnings out of the thank-you page and email output;
+		// the first parser message is folded into the log entry instead.
+		$previous_libxml = libxml_use_internal_errors( true );
+		$parsed          = simplexml_load_string( $result['body'] );
+		$libxml_errors   = libxml_get_errors();
+		libxml_clear_errors();
+		libxml_use_internal_errors( $previous_libxml );
 		if ( false === $parsed ) {
-			$this->logger->error( 'Response is not valid XML (code = ' . $code . ').' );
+			$detail = isset( $libxml_errors[0] ) ? ' ' . trim( $libxml_errors[0]->message ) : '';
+			$this->logger->error( 'Response is not valid XML (code = ' . $code . ').' . $detail );
 			return [];
 		}
 
@@ -578,6 +717,16 @@ class Plugin {
 
 				// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode
 				$raw_image_data = base64_decode( $base64_image_data );
+
+				// Verify the decoded payload is actually a PNG before writing it
+				// to disk. base64_decode() in non-strict mode silently yields
+				// garbage on malformed input, and a 200 response carrying a
+				// non-image body would otherwise be persisted as a .png.
+				if ( "\x89PNG" !== substr( $raw_image_data, 0, 4 ) ) {
+					$this->logger->error( 'Decoded QR code data is not a valid PNG image.' );
+					return [];
+				}
+
 				error_clear_last();
 				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
 				if ( false === file_put_contents( $path, $raw_image_data, LOCK_EX ) ) {
@@ -633,5 +782,19 @@ class Plugin {
 	protected static function sanitize( $value ) {
 		// allow only alphanumeric characters (and uppercase lowercased ones).
 		return preg_replace( '/[^0-9A-Z]+/', '', strtoupper( $value ) ) ?? '';
+	}
+
+	/**
+	 * Coerce a possibly-mixed value (e.g. a filtered QR field) to a string.
+	 *
+	 * Filter callbacks return mixed; non-scalars collapse to an empty string so
+	 * the generated XML never receives an array or object.
+	 *
+	 * @internal
+	 * @param mixed $value the value to coerce.
+	 * @return string
+	 */
+	protected static function scalar_to_string( $value ) {
+		return is_scalar( $value ) ? (string) $value : '';
 	}
 }

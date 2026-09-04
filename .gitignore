@@ -1,3 +1,7 @@
 vendor
 screenshots
 .DS_Store
+
+# PHPUnit run artifacts
+.phpunit.cache/
+/phpunit.xml

@@ -118,7 +118,7 @@ msgstr "Na to, aby ste tento mesiac mohli vygenerovať ďalšie, potrebujete pre
 msgid "To learn more about the service, please visit %s"
 msgstr "Pre viac informácií o službe, prosím navštívte %s"
 
-#: src/class-plugin.php:395
+#: src/class-plugin.php:466
 msgid "For convenient payment, scan this QR code with your banking app:"
 msgstr "Pre jednoduchú úhradu naskenujte tento QR kód mobilnou aplikáciou vašej banky:"
 
@@ -137,7 +137,7 @@ msgstr "PAY by square pre WooCommerce"
 msgid "Adds a payment QR code on summary page of direct bank transfer"
 msgstr "Pridáva platobný QR kód na sumarizačnú stránku platby prevodom"
 
-#: src/class-plugin.php:309
+#: src/class-plugin.php:318
 #: src/class-settings.php:36
 msgid "PAY by square"
 msgstr ""
@@ -147,7 +147,7 @@ msgid "Displays QR codes for convenient direct bank transfer payments"
 msgstr "Zobrazuje QR kódy pre pohodlné platby pomocou bankových prevodov"
 
 #. translators: %s: link to new settings page
-#: src/class-plugin.php:308
+#: src/class-plugin.php:317
 #, php-format
 msgid "The PAY by square settings were moved to %s"
 msgstr "Nastavenia PAY by square boli presunuté do %s"
