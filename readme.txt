@@ -94,9 +94,14 @@ Obe metódy prijímajú objekt WC_Order alebo ID objednávky. Hotový HTML blok 
 
 = 3.2.0 =
 * Pripravené pre WordPress 7.1 + WooCommerce 11.1.
-* Pridané filtre `pay_by_square_qr_variable_symbol` a `pay_by_square_qrdata` na úpravu údajov v QR kóde a verejné metódy na zobrazenie QR kódu na vlastnom mieste – vo faktúre, v detaile objednávky či na vlastnej ďakovnej stránke (postup vo FAQ).
+* Pridané filtre `pay_by_square_qr_variable_symbol` a `pay_by_square_qrdata` na úpravu variabilného symbolu a ďalších údajov v QR kóde.
+* QR kód sa dá zobraziť aj na vlastnom mieste – vo faktúre, v detaile objednávky či na vlastnej ďakovnej stránke (postup vo FAQ).
 * Deklarovaná kompatibilita s blokovým košíkom a pokladňou WooCommerce.
-* Opravené: upozornenie o presunutých nastaveniach sa zobrazí len v sekcii Bankový prevod, poškodený QR obrázok v cache sa vygeneruje nanovo, QR obrázok sa už neprikladá k ďalším emailom odoslaným v tej istej požiadavke, chybná odpoveď služby app.bysquare.com sa zapíše do logu bez PHP varovaní a neúplný bankový účet sa pri tvorbe QR kódu preskočí.
+* Opravené: upozornenie o presunutých nastaveniach sa zobrazí len v sekcii Bankový prevod.
+* Opravené: poškodený alebo prázdny QR obrázok v cache sa vygeneruje nanovo.
+* Opravené: QR obrázok sa už neprikladá k ďalším emailom odoslaným v tej istej požiadavke.
+* Opravené: chybná odpoveď služby app.bysquare.com sa zapíše do logu bez PHP varovaní.
+* Neúplný bankový účet v nastaveniach Bankového prevodu sa pri tvorbe QR kódu preskočí.
 
 = 3.1.0 =
 * Pridaný Live Preview na stránke pluginu na WordPress.org (WordPress Playground blueprint)
