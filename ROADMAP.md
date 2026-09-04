@@ -35,7 +35,7 @@
 |---|------------|-----|
 | 15 | GitHub deploy action — auto-deploy to WordPress.org SVN on release. `.distignore` landed in 3.2.0 and already encodes what ships; the action is what remains. | Eliminates manual SVN process. |
 | 16 | Rename `assets/` to `.wordpress-org/` | Proper WordPress.org repo structure. |
-| 17 | Block checkout end-to-end test — 3.2.0 declares `cart_checkout_blocks` compatibility, the smoke test asserts the declaration and checks the Order Confirmation template keeps the "Additional information" block (the only place `woocommerce_thankyou_bacs` fires on block themes), and the FAQ documents it. Still missing: a live render on a block theme (wp-env Tier 2.5). | Closes the remaining gap between "declared" and "seen working". |
+| 17 | Block checkout end-to-end test — 3.2.0 declares `cart_checkout_blocks` compatibility, the smoke test asserts the declaration and checks the Order Confirmation template keeps the "Additional information" block (the only place `woocommerce_thankyou_bacs` fires on block themes), and the FAQ documents it. Verified live on a block theme (Twenty Twenty-Five, WooCommerce 11.1) before 3.2.0: the smoke block arm passes and the QR image renders inside the Order Confirmation template. Still missing: running that arm automatically in the wp-env Tier 2.5 harness with a block theme. | Keeps "declared" and "seen working" from drifting apart on future WooCommerce versions. |
 
 ## Recommended Phases
 
