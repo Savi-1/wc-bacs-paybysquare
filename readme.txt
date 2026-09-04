@@ -2,13 +2,13 @@
 Contributors: webikon, kravco, johnnypea, martinkrcho, savione
 Tags: pay by square, qr platba, qrcode, bacs, woocommerce
 Requires at least: 6.0
-Tested up to: 6.9.4
+Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 3.1.0
+Stable tag: 3.2.0
 WC requires at least: 8.0
-WC tested up to: 10.6
+WC tested up to: 11.1
 License: GPLv2 or later
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Pridá QR kód k platbe prevodom vo WooCommerce. Do objednávky aj do emailu. Podporuje PAY by square (SK) aj QR Platba (CZ).
 
@@ -92,15 +92,11 @@ Obe metódy prijímajú objekt WC_Order alebo ID objednávky. Hotový HTML blok 
 
 == Changelog ==
 
-= Unreleased =
-* Pridané filtre `pay_by_square_qr_variable_symbol` a `pay_by_square_qrdata` na úpravu variabilného symbolu a ďalších údajov v QR kóde (napr. podľa čísla zálohovej faktúry)
-* QR kód sa dá zobraziť aj na vlastnom mieste – na vlastnej ďakovnej stránke, vo faktúre či v detaile objednávky (postup vo FAQ)
-* Deklarovaná kompatibilita s blokovým košíkom a pokladňou WooCommerce
-* Opravené zobrazenie upozornenia o presunutých nastaveniach – zobrazí sa už len v sekcii Bankový prevod
-* Opravené: poškodený alebo prázdny QR obrázok v cache sa už nezobrazí, plugin ho vygeneruje nanovo
-* Opravené: QR obrázok sa už neprikladá k ďalším emailom odoslaným v tej istej požiadavke
-* Opravené: neplatná odpoveď služby app.bysquare.com už nevypisuje PHP varovania na ďakovnej stránke, chyba sa zapíše do logu
-* Neúplný bankový účet v nastaveniach Bankového prevodu sa pri tvorbe QR kódu preskočí
+= 3.2.0 =
+* Pripravené pre WordPress 7.1 + WooCommerce 11.1.
+* Pridané filtre `pay_by_square_qr_variable_symbol` a `pay_by_square_qrdata` na úpravu údajov v QR kóde a verejné metódy na zobrazenie QR kódu na vlastnom mieste – vo faktúre, v detaile objednávky či na vlastnej ďakovnej stránke (postup vo FAQ).
+* Deklarovaná kompatibilita s blokovým košíkom a pokladňou WooCommerce.
+* Opravené: upozornenie o presunutých nastaveniach sa zobrazí len v sekcii Bankový prevod, poškodený QR obrázok v cache sa vygeneruje nanovo, QR obrázok sa už neprikladá k ďalším emailom odoslaným v tej istej požiadavke, chybná odpoveď služby app.bysquare.com sa zapíše do logu bez PHP varovaní a neúplný bankový účet sa pri tvorbe QR kódu preskočí.
 
 = 3.1.0 =
 * Pridaný Live Preview na stránke pluginu na WordPress.org (WordPress Playground blueprint)
