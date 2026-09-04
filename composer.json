@@ -1,6 +1,8 @@
 {
   "name": "webikon/wc-bacs-paybysquare",
-  "license": "GPLv2",
+  "description": "PAY by square for WooCommerce: adds a bank-transfer payment QR code to the thank-you page and the on-hold order email.",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-only",
   "require": {
     "php": "^7.4 || ^8.0"
   },
